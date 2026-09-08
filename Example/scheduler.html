@@ -1,0 +1,471 @@
+<!doctype html>
+<html lang="en">
+	<head>
+		<meta charset="utf-8" />
+		<meta name="viewport" content="width=device-width, initial-scale=1" />
+		<title>Baileys Scheduler</title>
+		<style>
+			:root {
+				color-scheme: light;
+				--background: #f7f9fc;
+				--card: #ffffff;
+				--foreground: #0f172a;
+				--muted: #475569;
+				--border: #dbe4f0;
+				--primary: #2563eb;
+				--accent: #047857;
+				--danger: #b91c1c;
+				font-family:
+					Inter,
+					ui-sans-serif,
+					system-ui,
+					-apple-system,
+					BlinkMacSystemFont,
+					'Segoe UI',
+					sans-serif;
+			}
+			* {
+				box-sizing: border-box;
+			}
+			body {
+				margin: 0;
+				background: var(--background);
+				color: var(--foreground);
+				font-size: 16px;
+				line-height: 1.5;
+			}
+			button,
+			input,
+			select,
+			textarea {
+				font: inherit;
+			}
+			button,
+			select,
+			input {
+				min-height: 44px;
+			}
+			button {
+				cursor: pointer;
+			}
+			button:focus-visible,
+			input:focus-visible,
+			select:focus-visible,
+			textarea:focus-visible {
+				outline: 3px solid #93c5fd;
+				outline-offset: 2px;
+			}
+			.shell {
+				width: min(1080px, calc(100% - 32px));
+				margin: 0 auto;
+				padding: 32px 0 56px;
+			}
+			header {
+				display: flex;
+				justify-content: space-between;
+				align-items: center;
+				gap: 16px;
+				margin-bottom: 24px;
+			}
+			h1,
+			h2,
+			p {
+				margin-top: 0;
+			}
+			h1 {
+				margin-bottom: 4px;
+				font-size: clamp(1.55rem, 4vw, 2.2rem);
+				letter-spacing: -0.035em;
+			}
+			h2 {
+				font-size: 1.1rem;
+			}
+			.subtitle,
+			.hint,
+			.meta {
+				color: var(--muted);
+			}
+			.subtitle {
+				margin: 0;
+			}
+			.status {
+				display: inline-flex;
+				align-items: center;
+				gap: 8px;
+				white-space: nowrap;
+			}
+			.status::before {
+				width: 10px;
+				height: 10px;
+				border-radius: 50%;
+				background: var(--danger);
+				content: '';
+			}
+			.status.online::before {
+				background: var(--accent);
+			}
+			.grid {
+				display: grid;
+				grid-template-columns: minmax(0, 1.15fr) minmax(300px, 0.85fr);
+				gap: 20px;
+			}
+			.card {
+				padding: 24px;
+				border: 1px solid var(--border);
+				border-radius: 16px;
+				background: var(--card);
+				box-shadow: 0 10px 30px rgb(15 23 42 / 5%);
+			}
+			.field {
+				margin-bottom: 18px;
+			}
+			label {
+				display: block;
+				margin-bottom: 6px;
+				font-weight: 650;
+			}
+			input,
+			select,
+			textarea {
+				width: 100%;
+				border: 1px solid #94a3b8;
+				border-radius: 9px;
+				background: #fff;
+				color: var(--foreground);
+				padding: 10px 12px;
+			}
+			textarea {
+				min-height: 132px;
+				resize: vertical;
+			}
+			.row {
+				display: flex;
+				justify-content: space-between;
+				gap: 12px;
+			}
+			.hint,
+			.meta {
+				margin: 6px 0 0;
+				font-size: 0.875rem;
+			}
+			.primary {
+				width: 100%;
+				border: 0;
+				border-radius: 9px;
+				background: var(--primary);
+				color: #fff;
+				padding: 11px 18px;
+				font-weight: 700;
+				transition:
+					background 180ms ease,
+					transform 180ms ease;
+			}
+			.primary:hover {
+				background: #1d4ed8;
+			}
+			.primary:active {
+				transform: translateY(1px);
+			}
+			.primary:disabled {
+				cursor: wait;
+				opacity: 0.65;
+			}
+			.secondary {
+				border: 1px solid var(--border);
+				border-radius: 9px;
+				background: #fff;
+				color: var(--foreground);
+				padding: 8px 14px;
+			}
+			.jobs {
+				display: grid;
+				gap: 10px;
+				max-height: 560px;
+				overflow: auto;
+			}
+			.job {
+				padding: 14px;
+				border: 1px solid var(--border);
+				border-radius: 10px;
+			}
+			.job-head {
+				display: flex;
+				justify-content: space-between;
+				align-items: start;
+				gap: 10px;
+			}
+			.job p {
+				margin-bottom: 4px;
+				overflow-wrap: anywhere;
+			}
+			.badge {
+				border-radius: 999px;
+				background: #e2e8f0;
+				padding: 3px 8px;
+				font-size: 0.75rem;
+				font-weight: 700;
+				text-transform: uppercase;
+			}
+			.badge.sent {
+				background: #d1fae5;
+				color: #065f46;
+			}
+			.badge.failed {
+				background: #fee2e2;
+				color: #991b1b;
+			}
+			.empty {
+				padding: 28px 12px;
+				text-align: center;
+				color: var(--muted);
+			}
+			.notice {
+				min-height: 24px;
+				margin: 14px 0 0;
+				color: var(--accent);
+			}
+			.notice.error {
+				color: var(--danger);
+			}
+			#login {
+				width: min(440px, calc(100% - 32px));
+				margin: 12vh auto;
+			}
+			[hidden] {
+				display: none !important;
+			}
+			@media (max-width: 760px) {
+				.shell {
+					width: min(100% - 20px, 600px);
+					padding-top: 20px;
+				}
+				.grid {
+					grid-template-columns: 1fr;
+				}
+				.card {
+					padding: 18px;
+				}
+				header {
+					align-items: flex-start;
+				}
+			}
+			@media (prefers-reduced-motion: reduce) {
+				*,
+				*::before,
+				*::after {
+					scroll-behavior: auto !important;
+					transition: none !important;
+				}
+			}
+		</style>
+	</head>
+	<body>
+		<section id="login" class="card" aria-labelledby="login-title">
+			<h1 id="login-title">Baileys Scheduler</h1>
+			<p class="subtitle">
+				Enter the admin token stored in <code>.env.azure</code>. It stays in this browser tab only.
+			</p>
+			<form id="login-form">
+				<div class="field">
+					<label for="token">Admin token</label>
+					<input id="token" name="token" type="password" autocomplete="current-password" required />
+				</div>
+				<button class="primary" type="submit">Open scheduler</button>
+				<p id="login-error" class="notice error" role="alert"></p>
+			</form>
+		</section>
+
+		<main id="app" class="shell" hidden>
+			<header>
+				<div>
+					<h1>Message scheduler</h1>
+					<p class="subtitle">Choose a synced chat and schedule one message.</p>
+				</div>
+				<div>
+					<span id="connection" class="status">Checking</span>
+					<button id="logout" class="secondary" type="button">Lock</button>
+				</div>
+			</header>
+			<div class="grid">
+				<section class="card" aria-labelledby="compose-title">
+					<h2 id="compose-title">New message</h2>
+					<form id="schedule-form">
+						<div class="field">
+							<label for="search">Find a chat</label>
+							<input id="search" type="search" placeholder="Search names" autocomplete="off" />
+						</div>
+						<div class="field">
+							<label for="chat">Chat</label>
+							<select id="chat" required>
+								<option value="">Loading chats…</option>
+							</select>
+							<p id="chat-help" class="hint">Only chats synchronized by the linked WhatsApp account appear.</p>
+						</div>
+						<div class="field">
+							<label for="message">Message</label>
+							<textarea id="message" maxlength="4096" required></textarea>
+							<div class="row">
+								<span class="hint">Maximum 4,096 characters</span><span id="count" class="hint">0</span>
+							</div>
+						</div>
+						<div class="field">
+							<label for="send-at">Send date and time</label>
+							<input id="send-at" type="datetime-local" required />
+							<p class="hint">Uses your browser’s local time zone.</p>
+						</div>
+						<button id="schedule" class="primary" type="submit">Schedule message</button>
+						<p id="notice" class="notice" role="status" aria-live="polite"></p>
+					</form>
+				</section>
+
+				<section class="card" aria-labelledby="jobs-title">
+					<div class="row">
+						<h2 id="jobs-title">Scheduled messages</h2>
+						<button id="refresh" class="secondary" type="button">Refresh</button>
+					</div>
+					<div id="jobs" class="jobs"><p class="empty">Loading…</p></div>
+				</section>
+			</div>
+		</main>
+
+		<script>
+			const $ = id => document.getElementById(id)
+			let token = sessionStorage.getItem('scheduler-token') || ''
+			let chats = []
+
+			const localInputValue = date => {
+				const local = new Date(date.getTime() - date.getTimezoneOffset() * 60000)
+				return local.toISOString().slice(0, 16)
+			}
+
+			const api = async (path, options = {}) => {
+				const response = await fetch(path, {
+					...options,
+					headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json', ...options.headers }
+				})
+				if (response.status === 401) throw new Error('INVALID_TOKEN')
+				const body = response.status === 204 ? undefined : await response.json()
+				if (!response.ok) throw new Error(body?.error || 'Request failed')
+				return body
+			}
+
+			const showLogin = message => {
+				sessionStorage.removeItem('scheduler-token')
+				token = ''
+				$('app').hidden = true
+				$('login').hidden = false
+				$('login-error').textContent = message || ''
+				$('token').focus()
+			}
+
+			const renderChats = () => {
+				const selected = $('chat').value
+				const query = $('search').value.trim().toLowerCase()
+				const visible = chats.filter(chat => chat.name.toLowerCase().includes(query))
+				$('chat').replaceChildren(new Option(visible.length ? 'Select a chat' : 'No matching chats', ''))
+				for (const item of visible) $('chat').add(new Option(`${item.name} · ${item.type}`, item.id))
+				if (visible.some(item => item.id === selected)) $('chat').value = selected
+				$('chat-help').textContent = chats.length
+					? `${chats.length} synced chat${chats.length === 1 ? '' : 's'} available.`
+					: 'No chats have synced yet. Receive or send a WhatsApp message, then refresh.'
+			}
+
+			const renderJobs = jobs => {
+				const names = new Map(chats.map(chat => [chat.id, chat.name]))
+				$('jobs').replaceChildren()
+				if (!jobs.length) {
+					const empty = document.createElement('p')
+					empty.className = 'empty'
+					empty.textContent = 'No scheduled messages yet.'
+					$('jobs').append(empty)
+					return
+				}
+				for (const job of jobs.slice().reverse()) {
+					const card = document.createElement('article')
+					card.className = 'job'
+					const head = document.createElement('div')
+					head.className = 'job-head'
+					const title = document.createElement('strong')
+					title.textContent = names.get(job.jid) || 'Known recipient'
+					const badge = document.createElement('span')
+					badge.className = `badge ${job.status}`
+					badge.textContent = job.status
+					head.append(title, badge)
+					const text = document.createElement('p')
+					text.textContent = job.text
+					const time = document.createElement('p')
+					time.className = 'meta'
+					time.textContent = new Date(job.scheduledFor).toLocaleString()
+					card.append(head, text, time)
+					$('jobs').append(card)
+				}
+			}
+
+			const load = async () => {
+				try {
+					const [health, chatList, jobs] = await Promise.all([
+						fetch('/health').then(r => r.json()),
+						api('/chats'),
+						api('/messages')
+					])
+					chats = chatList
+					$('connection').textContent = health.connected ? 'WhatsApp connected' : 'WhatsApp offline'
+					$('connection').classList.toggle('online', health.connected)
+					renderChats()
+					renderJobs(jobs)
+					$('login').hidden = true
+					$('app').hidden = false
+				} catch (error) {
+					if (error.message === 'INVALID_TOKEN') showLogin('The admin token is incorrect.')
+					else showLogin(error.message)
+				}
+			}
+
+			$('login-form').addEventListener('submit', event => {
+				event.preventDefault()
+				token = $('token').value.trim()
+				sessionStorage.setItem('scheduler-token', token)
+				void load()
+			})
+			$('logout').addEventListener('click', () => showLogin())
+			$('refresh').addEventListener('click', () => void load())
+			$('search').addEventListener('input', renderChats)
+			$('message').addEventListener('input', () => {
+				$('count').textContent = $('message').value.length
+			})
+			$('schedule-form').addEventListener('submit', async event => {
+				event.preventDefault()
+				const button = $('schedule')
+				button.disabled = true
+				$('notice').className = 'notice'
+				$('notice').textContent = 'Scheduling…'
+				try {
+					await api('/messages', {
+						method: 'POST',
+						body: JSON.stringify({
+							jid: $('chat').value,
+							text: $('message').value,
+							sendAt: new Date($('send-at').value).toISOString()
+						})
+					})
+					$('message').value = ''
+					$('count').textContent = '0'
+					$('notice').textContent = 'Message scheduled.'
+					await load()
+				} catch (error) {
+					$('notice').className = 'notice error'
+					$('notice').textContent =
+						error.message === 'INVALID_TOKEN' ? 'Session expired. Lock and sign in again.' : error.message
+				} finally {
+					button.disabled = false
+				}
+			})
+
+			const defaultTime = new Date(Date.now() + 5 * 60 * 1000)
+			$('send-at').value = localInputValue(defaultTime)
+			$('send-at').min = localInputValue(new Date())
+			if (token) void load()
+			else showLogin()
+		</script>
+	</body>
+</html>

@@ -1,5 +1,9 @@
 .DS_Store
 .env
+.env.azure
+.scheduler-data
+.azure/
+.azure-deploy.*
 .yarn/
 *.tgz
 */.DS_Store

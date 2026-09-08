@@ -1,0 +1,7 @@
+{
+  "extends": "./tsconfig.json",
+  "compilerOptions": {
+    "rootDir": "."
+  },
+  "include": ["Example/scheduler.ts", "Example/scheduler-store.ts", "Example/scheduler-store.test.ts"]
+}
